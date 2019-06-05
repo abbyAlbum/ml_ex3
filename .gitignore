@@ -1,0 +1,7 @@
+venv/
+train_x
+train_y
+test_x
+ex_3.pdf
+*.pyc
+.idea/
