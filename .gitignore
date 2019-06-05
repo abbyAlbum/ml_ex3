@@ -1,6 +1,8 @@
 venv/
 train_x
+train_x_short
 train_y
+train_y_short
 test_x
 ex_3.pdf
 *.pyc
