@@ -1,8 +1,8 @@
 import numpy as np
 
 num_of_classes = 10
-hidden_layer_size = 500
-lr = 0.01
+hidden_layer_size = 200
+lr = 0.0001
 
 
 def relu(x):
@@ -25,8 +25,8 @@ def ng_log_likelihood_loss(y, y_hat):
 
 
 def load_data():
-    train_x = np.loadtxt('train_x_short_500', dtype=float)
-    train_y = np.loadtxt('train_y_short_500', dtype=int)
+    train_x = np.loadtxt('train_x', dtype=float)
+    train_y = np.loadtxt('train_y')
     return train_x, train_y
 
 
@@ -37,7 +37,7 @@ def fprop(x, y, params):
 
     z2 = np.dot(W2, h1) + b2
     y_hat = stable_softmax(z2)
-    loss = ng_log_likelihood_loss(y, y_hat)
+    loss = -np.log(y_hat)
 
     ret = {'x': x, 'y': y, 'z1': z1, 'h1': h1, 'z2': z2, 'y_hat': y_hat, 'loss': loss}
     for key in params:
@@ -59,7 +59,7 @@ def bprop(fprop_cache):
     # db1 = dz1  # dL/dz2 * dz2/dh1 * dh1/dz1 * dz1/db1
 
     dz2 = y_hat
-    dz2[y] -= 1
+    dz2[int(y)] -= 1
     dW2 = np.dot(dz2, h1.T)
     db2 = dz2
 
@@ -96,7 +96,7 @@ def train(train_x, train_y, params):
         fprop_cache = fprop(x, y, params)
 
         # compute loss
-        loss -= np.log(fprop_cache['y_hat'][y])
+        loss -= np.log(fprop_cache['y_hat'][int(y)])
 
         bprop_cache = bprop(fprop_cache)
         params = update(fprop_cache, bprop_cache)
@@ -121,7 +121,7 @@ def validation(validation_x, validation_y, params):
             vali_scc += 1
 
         # compute loss
-        validation_loss -= np.log(fprop_cache['y_hat'][y])
+        validation_loss -= np.log(fprop_cache['y_hat'][int(y)])
     return vali_scc, validation_loss
 
 
@@ -154,8 +154,8 @@ def main():
     split_ratio = 0.8
     train_x, train_y, validation_x, validation_y = split_to_validation(x, y, split_ratio)
 
-    for e in range(0, 10):
-        # train_x, train_y = shuffle_data(train_x, train_y)
+    for e in range(0, 20):
+        train_x, train_y = shuffle_data(train_x, train_y)
         loss, params = train(train_x, train_y, params)
         vali_scc, validation_loss = validation(validation_x, validation_y, params)
 
@@ -163,7 +163,22 @@ def main():
         avg_validation_loss = validation_loss / (input_size * (1 - split_ratio))
         validation_acc = vali_scc / (input_size * (1 - split_ratio))
         print('# {0} acc {1} loss {2} validation_loss {3}'.format(e, round(validation_acc, 3), avg_loss[0],
+
                                                                   avg_validation_loss[0]))
+    predictions = []
+    test_x = np.loadtxt('test_x')
+    for example in test_x:
+        # make a copy of the array
+        example = np.ndarray.astype(example, dtype=float)
+        # normalize
+        example /= 255
+        # reshape to vector
+        example = example.reshape(-1, 1)
+        fprop_cache = fprop(example, 0, params)
+        prediction = int(np.argmax(fprop_cache['y_hat']))
+        predictions.append(prediction)
+
+    np.savetxt(fname='test_y', X=np.asarray(predictions), fmt='%d')
 
 
 if __name__ == "__main__":
