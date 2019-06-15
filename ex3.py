@@ -1,8 +1,8 @@
 import numpy as np
 
 num_of_classes = 10
-hidden_layer_size = 200
-lr = 0.0001
+hidden_layer_size = 100
+lr = 0.001
 
 
 def relu(x):
@@ -20,10 +20,6 @@ def stable_softmax(X):
     return exps / np.sum(exps)
 
 
-def ng_log_likelihood_loss(y, y_hat):
-    return -np.sum(y * np.log(y_hat + 1e-6))
-
-
 def load_data():
     train_x = np.loadtxt('train_x', dtype=float)
     train_y = np.loadtxt('train_y')
@@ -37,9 +33,8 @@ def fprop(x, y, params):
 
     z2 = np.dot(W2, h1) + b2
     y_hat = stable_softmax(z2)
-    loss = -np.log(y_hat)
 
-    ret = {'x': x, 'y': y, 'z1': z1, 'h1': h1, 'z2': z2, 'y_hat': y_hat, 'loss': loss}
+    ret = {'x': x, 'y': y, 'z1': z1, 'h1': h1, 'z2': z2, 'y_hat': y_hat}
     for key in params:
         ret[key] = params[key]
     return ret
@@ -47,16 +42,7 @@ def fprop(x, y, params):
 
 def bprop(fprop_cache):
     # Follows procedure given in notes
-    x, y, z1, h1, z2, y_hat, loss = [fprop_cache[key] for key in ('x', 'y', 'z1', 'h1', 'z2', 'y_hat', 'loss')]
-
-    # dz2 = (y_hat - y)  # dL/dz2
-    # dW2 = np.dot(dz2, h1.T)  # dL/dz2 * dz2/dw2
-    # db2 = dz2  # dL/dz2 * dz2/db2
-    #
-    # dz1 = np.dot(fprop_cache['W2'].T,
-    #              (y_hat - y)) * relu_derivative(z1)  # dL/dz2 * dz2/dh1 * dh1/dz1
-    # dW1 = np.dot(dz1, x.T)  # dL/dz2 * dz2/dh1 * dh1/dz1 * dz1/dw1
-    # db1 = dz1  # dL/dz2 * dz2/dh1 * dh1/dz1 * dz1/db1
+    x, y, z1, h1, z2, y_hat = [fprop_cache[key] for key in ('x', 'y', 'z1', 'h1', 'z2', 'y_hat')]
 
     dz2 = y_hat
     dz2[int(y)] -= 1
@@ -105,7 +91,7 @@ def train(train_x, train_y, params):
 
 def validation(validation_x, validation_y, params):
     validation_loss = 0
-    vali_scc = 0
+    validation_sucess = 0
     for x, y in zip(validation_x, validation_y):
         # make a copy of the array
         x = np.ndarray.astype(x, dtype=float)
@@ -118,11 +104,11 @@ def validation(validation_x, validation_y, params):
 
         # compute success
         if y == np.argmax(fprop_cache['y_hat']):
-            vali_scc += 1
+            validation_sucess += 1
 
         # compute loss
         validation_loss -= np.log(fprop_cache['y_hat'][int(y)])
-    return vali_scc, validation_loss
+    return validation_sucess, validation_loss
 
 
 def shuffle_data(x, y):
@@ -145,10 +131,10 @@ def main():
     input_size = x.shape[0]
 
     W1 = np.random.uniform(low=-0.08, high=0.08, size=(hidden_layer_size, d))
-    b1 = np.random.uniform(low=-0.24, high=0.24, size=(hidden_layer_size, 1))
+    b1 = np.random.uniform(low=-0.5, high=0.5, size=(hidden_layer_size, 1))
 
-    W2 = np.random.uniform(low=-0.23, high=0.23, size=(num_of_classes, hidden_layer_size))
-    b2 = np.random.uniform(low=-0.73, high=0.73, size=(num_of_classes, 1))
+    W2 = np.random.uniform(low=-0.15, high=0.15, size=(num_of_classes, hidden_layer_size))
+    b2 = np.random.uniform(low=-0.5, high=0.5, size=(num_of_classes, 1))
     params = {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
 
     split_ratio = 0.8
@@ -157,11 +143,11 @@ def main():
     for e in range(0, 20):
         train_x, train_y = shuffle_data(train_x, train_y)
         loss, params = train(train_x, train_y, params)
-        vali_scc, validation_loss = validation(validation_x, validation_y, params)
+        validation_success, validation_loss = validation(validation_x, validation_y, params)
 
         avg_loss = loss / (input_size * split_ratio)
         avg_validation_loss = validation_loss / (input_size * (1 - split_ratio))
-        validation_acc = vali_scc / (input_size * (1 - split_ratio))
+        validation_acc = validation_success / (input_size * (1 - split_ratio))
         print('# {0} acc {1} loss {2} validation_loss {3}'.format(e, round(validation_acc, 3), avg_loss[0],
 
                                                                   avg_validation_loss[0]))
