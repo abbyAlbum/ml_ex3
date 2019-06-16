@@ -140,7 +140,7 @@ def main():
     split_ratio = 0.8
     train_x, train_y, validation_x, validation_y = split_to_validation(x, y, split_ratio)
 
-    for e in range(0, 20):
+    for e in range(0, 30):
         train_x, train_y = shuffle_data(train_x, train_y)
         loss, params = train(train_x, train_y, params)
         validation_success, validation_loss = validation(validation_x, validation_y, params)
